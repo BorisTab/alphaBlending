@@ -10,18 +10,18 @@ namespace avxBlending {
     constexpr unsigned char packed1256[] = {  1,   3,   5, 255,   9,  11,  13, 255,  255, 255, 255, 255, 255, 255, 255, 255,    1,   3,   5, 255,   9,  11,  13, 255,  255, 255, 255, 255, 255, 255, 255, 255};
     constexpr unsigned char packed3478[] = {255, 255, 255, 255, 255, 255, 255, 255,    1,   3,   5, 255,   9,  11,  13, 255,  255, 255, 255, 255, 255, 255, 255, 255,    1,   3,   5, 255,   9,  11,  13, 255};
 
-    constexpr unsigned char minued[] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+    constexpr unsigned char minuend[] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
 
     constexpr unsigned char alpha[] = {0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255};
 }
 
-unsigned int start = 0;
-unsigned int end = 0;
-unsigned int startAVX = 0;
-unsigned int endAVX = 0;
+unsigned int clockStart = 0;
+unsigned int clockEnd = 0;
+unsigned int clockStartAVX = 0;
+unsigned int clockEndAVX = 0;
 
 char *blending(char *backFile, char *frontFile) {
-    start = clock();
+    clockStart = clock();
 
     const int backBufferStart = *(reinterpret_cast<const int *>(backFile + 0x0a));
     const int frontBufferStart = *(reinterpret_cast<const int *>(frontFile + 0x0a));
@@ -51,14 +51,14 @@ char *blending(char *backFile, char *frontFile) {
         }
     }
 
-    end = clock();
+    clockEnd = clock();
 
     backFile -= backBufferStart;
     return backFile;
 }
 
 char *blendingAVX(char *backFile, char *frontFile) {
-    startAVX = clock();
+    clockStartAVX = clock();
 
     const int backBufferStart = *(reinterpret_cast<const int *>(backFile + 0x0a));
     const int frontBufferStart = *(reinterpret_cast<const int *>(frontFile + 0x0a));
@@ -74,14 +74,14 @@ char *blendingAVX(char *backFile, char *frontFile) {
     int startPosX = 300;
     int startPosY = 250;
 
-    __m256i mask1256 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::mask1256));
-    __m256i mask3478 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::mask3478));
+    const __m256i mask1256 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::mask1256));
+    const __m256i mask3478 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::mask3478));
 
-    __m256i packed1256 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::packed1256));
-    __m256i packed3478 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::packed3478));
+    const __m256i packed1256 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::packed1256));
+    const __m256i packed3478 = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::packed3478));
 
-    __m256i minued = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::minued));
-    __m256i alpha = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::alpha));
+    const __m256i minuend = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::minuend));
+    const __m256i alpha = _mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(avxBlending::alpha));
 
     for (int posY = startPosY; posY < startPosY + frontHeight; ++posY) {
         int posX = startPosX;
@@ -105,8 +105,8 @@ char *blendingAVX(char *backFile, char *frontFile) {
             front1256 = _mm256_mullo_epi16(front1256, frontAlpha1256);
             front3478 = _mm256_mullo_epi16(front3478, frontAlpha3478);
 
-            __m256i backAlpha1256 = _mm256_sub_epi16(minued, frontAlpha1256);
-            __m256i backAlpha3478 = _mm256_sub_epi16(minued, frontAlpha3478);
+            __m256i backAlpha1256 = _mm256_sub_epi16(minuend, frontAlpha1256);
+            __m256i backAlpha3478 = _mm256_sub_epi16(minuend, frontAlpha3478);
 
             back1256 = _mm256_mullo_epi16(back1256, backAlpha1256);
             back3478 = _mm256_mullo_epi16(back3478, backAlpha3478);
@@ -135,7 +135,7 @@ char *blendingAVX(char *backFile, char *frontFile) {
         }
     }
 
-    endAVX = clock();
+    clockEndAVX = clock();
 
     backFile -= backBufferStart;
     return backFile;
@@ -166,10 +166,10 @@ int main() {
     blending(backFileName, frontFileName, mergeFileName);
     blending(backFileName, frontFileName, mergeAVXFileName, 'o');
 
-    printf("blending:     %g\n", (end - start) / 1000000.0);
-    printf("AVX blending: %g\n", (endAVX - startAVX) / 1000000.0);
+    printf("blending:     %g\n", (clockEnd - clockStart) / 1000000.0);
+    printf("AVX blending: %g\n", (clockEndAVX - clockStartAVX) / 1000000.0);
 
-    printf("speed up:     %g\n", static_cast<double >(end - start) / static_cast<double >(endAVX - startAVX));
+    printf("speed up:     %g\n", static_cast<double >(clockEnd - clockStart) / static_cast<double >(clockEndAVX - clockStartAVX));
 
     return 0;
 }
