@@ -90,31 +90,31 @@ char *blendingAVX(char *backFile, char *frontFile) {
             __m256i back = _mm256_loadu_si256(reinterpret_cast<__m256i_u const *>(backFile + posY * backWidth * 4 + posX * 4));
             __m256i front = _mm256_loadu_si256(reinterpret_cast<__m256i_u const *>(frontFile + (posY - startPosY) * frontWidth * 4 + (posX - startPosX) * 4));
 
-            __m256i front1256 = _mm256_shuffle_epi8(front, mask1256);
-            __m256i front3478 = _mm256_shuffle_epi8(front, mask3478);
+            __m256i front1256 = _mm256_shuffle_epi8(front, mask1256); // front pixels 1 2 5 6
+            __m256i front3478 = _mm256_shuffle_epi8(front, mask3478); // front pixels 3 4 7 8
 
-            __m256i back1256 = _mm256_shuffle_epi8(back, mask1256);
-            __m256i back3478 = _mm256_shuffle_epi8(back, mask3478);
+            __m256i back1256 = _mm256_shuffle_epi8(back, mask1256); // back pixels 1 2 5 6
+            __m256i back3478 = _mm256_shuffle_epi8(back, mask3478); // back pixels 3 4 7 8
 
-            __m256i frontAlpha1256 = _mm256_shufflehi_epi16(front1256, 0xff);
+            __m256i frontAlpha1256 = _mm256_shufflehi_epi16(front1256, 0xff); // shuffle alpha
             __m256i frontAlpha3478 = _mm256_shufflehi_epi16(front3478, 0xff);
 
             frontAlpha1256 = _mm256_shufflelo_epi16(frontAlpha1256, 0xff);
             frontAlpha3478 = _mm256_shufflelo_epi16(frontAlpha3478, 0xff);
 
-            front1256 = _mm256_mullo_epi16(front1256, frontAlpha1256);
+            front1256 = _mm256_mullo_epi16(front1256, frontAlpha1256); //alpha * front
             front3478 = _mm256_mullo_epi16(front3478, frontAlpha3478);
 
-            __m256i backAlpha1256 = _mm256_sub_epi16(minuend, frontAlpha1256);
+            __m256i backAlpha1256 = _mm256_sub_epi16(minuend, frontAlpha1256); // 255 - alpha
             __m256i backAlpha3478 = _mm256_sub_epi16(minuend, frontAlpha3478);
 
-            back1256 = _mm256_mullo_epi16(back1256, backAlpha1256);
+            back1256 = _mm256_mullo_epi16(back1256, backAlpha1256);  // (255 - alpha) * back
             back3478 = _mm256_mullo_epi16(back3478, backAlpha3478);
 
-            __m256i out1256 = _mm256_add_epi16(back1256, front1256);
+            __m256i out1256 = _mm256_add_epi16(back1256, front1256); // (255 - alpha) * back + alpha * front
             __m256i out3478 = _mm256_add_epi16(back3478, front3478);
 
-            out1256 = _mm256_shuffle_epi8(out1256, packed1256);
+            out1256 = _mm256_shuffle_epi8(out1256, packed1256);  // pack pixels
             out3478 = _mm256_shuffle_epi8(out3478, packed3478);
             out1256 = _mm256_add_epi64(out1256, out3478);
             out1256 = _mm256_add_epi64(out1256, alpha);
