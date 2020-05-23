@@ -6,3 +6,10 @@
 
 ## Out picture
 ![merge](https://github.com/BorisTab/alphaBlending/blob/master/merge.bmp)
+
+## Speed up with AVX2
+| Flag | speed up |
+|:----:|:--------:|
+| -O0  |    2.7   |
+| -O3  |    1.9   |
+
